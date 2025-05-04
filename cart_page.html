@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; max-width: 600px; margin: auto; }
+      .item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #ccc; }
+      .controls button { margin: 0 5px; }
+      .total { text-align: right; font-size: 18px; font-weight: bold; padding: 10px; }
+    </style>
+  </head>
+  <body>
+    <h2>線上購物車</h2>
+    <div id="product-list"></div>
+    <div class="total">總金額: $<span id="total">0</span></div>
+    <div style="text-align:right; padding: 10px;">
+      <button onclick="submitOrder()">✅ 送出訂單</button>
+    </div>
+
+    <script>
+      let products = [];
+
+      function render() {
+        const list = document.getElementById('product-list');
+        list.innerHTML = '';
+        let total = 0;
+
+        products.forEach((p, i) => {
+          total += p.price * p.quantity;
+          list.innerHTML += `
+            <div class="item">
+              <span>${p.name} - $${p.price}</span>
+              <div class="controls">
+                <button onclick="changeQty(${i}, -1)">－</button>
+                ${p.quantity}
+                <button onclick="changeQty(${i}, 1)">＋</button>
+              </div>
+            </div>
+          `;
+        });
+
+        document.getElementById('total').innerText = total;
+      }
+
+      function changeQty(index, delta) {
+        products[index].quantity += delta;
+        if (products[index].quantity < 0) products[index].quantity = 0;
+        render();
+      }
+
+      function submitOrder() {
+        const filtered = products.filter(p => p.quantity > 0);
+        if (filtered.length === 0) {
+          alert("請至少選擇一項商品！");
+          return;
+        }
+
+        google.script.run.withSuccessHandler(total => {
+          alert("訂單已送出！總金額為 $" + total +"，請至訂單查詢確認訂單");
+          products.forEach(p => p.quantity = 0);
+          render();
+        }).submitOrder(filtered);
+      }
+
+      google.script.run.withSuccessHandler(c_data => {
+        products = c_data;
+        render();
+      }).getProducts();
+    </script>
+  </body>
+</html>

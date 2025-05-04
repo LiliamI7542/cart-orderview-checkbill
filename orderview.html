@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>訂單紀錄</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    .order {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    .item {
+      margin-left: 20px;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 訂單紀錄</h2>
+  <div id="order-list">載入中...</div>
+  <pre id="log" style="color:gray;"></pre>
+
+  <script>
+    function handleOrders(raw) {
+      const container = document.getElementById("order-list");
+      const log = document.getElementById("log");
+
+      try {
+        const result = JSON.parse(raw);  // ✅ 把字串轉成物件陣列
+        container.innerHTML = ''; // 清空
+
+        result.forEach(order => {
+          let html = `<div class="order">`;
+          html += `<h3>訂單編號：${order.orderId}</h3>`;
+          html += `<p>時間：${new Date(order.time).toLocaleString()}</p>`;
+          html += `<p><strong>品項：</strong></p>`;
+          order.items.forEach(item => {
+            html += `<div class="item">・${item.product} × ${item.quantity}（單價 $${item.price}，小計 $${item.subtotal}）</div>`;
+          });
+          html += `<div class="total">總金額：$${order.total}</div>`;
+          html += `</div>`;
+          container.innerHTML += html;
+        });
+
+        log.innerText = ` 共載入 ${result.length} 筆訂單`;
+
+      } catch (err) {
+        container.innerHTML = "⚠️ 資料格式錯誤";
+        log.innerText = "❌ JSON 解析失敗：" + err;
+      }
+    }
+
+    google.script.run
+      .withSuccessHandler(handleOrders)
+      .withFailureHandler(err => {
+        document.getElementById("order-list").innerText = "⚠️ 無法載入訂單資料";
+        document.getElementById("log").innerText = "❌ 錯誤：" + JSON.stringify(err);
+      })
+      .getOrders(); // 🔁 呼叫後端
+  </script>
+</body>
+</html>

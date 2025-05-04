@@ -1,0 +1,78 @@
+<!-- ✅ 完整結帳頁面：含條碼 Base64 輸出 -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>結帳成功</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background-color: #ffffff;
+    }
+    .order {
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      padding: 16px;
+      background: #f0fff5;
+    }
+    .item {
+      margin-left: 20px;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .barcode {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+  
+</head>
+<body>
+  <h2>✅ 感謝您的訂購！</h2>
+  <div id="order">載入中...</div>
+  <div class="barcode">
+    <img id="barcode" alt="條碼載入中...">
+    <div id="order-id"></div>
+  </div>
+  <pre id="log" style="color: gray;"></pre>
+
+  <script>
+    // 1. 從 Apps Script 載入訂單
+    google.script.run
+      .withSuccessHandler(function(raw) {
+        const result = JSON.parse(raw);
+        const order = result[result.length - 1]; // 只取最後一筆
+
+        let html = `<div class="order">`;
+        html += `<h3>訂單編號：${order.orderId}</h3>`;
+        html += `<p>時間：${new Date(order.time).toLocaleString()}</p>`;
+        html += `<p><strong>品項：</strong></p>`;
+        order.items.forEach(item => {
+          html += `<div class="item">・${item.product} x ${item.quantity}（單價 $${item.price}，小計 $${item.subtotal}）</div>`;
+        });
+        html += `<div class="total">總金額：$${order.total}</div>`;
+        html += `</div>`;
+        document.getElementById("order").innerHTML = html;
+        document.getElementById("order-id").innerText = order.orderId;
+
+        // 2. 拿條碼圖片 (base64)
+        google.script.run
+          .withSuccessHandler(function(base64Url) {
+            document.getElementById("barcode").src = base64Url;
+          })
+          .getBarcodeBase64(order.orderId);
+      })
+      .withFailureHandler(err => {
+        document.getElementById("order").innerText = "❌ 無法載入訂單";
+        document.getElementById("log").innerText = JSON.stringify(err);
+      })
+      .getOrders();
+  </script>
+</body>
+</html>
